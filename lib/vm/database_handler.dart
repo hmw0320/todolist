@@ -28,7 +28,8 @@ class DatabaseHandler {
           (
             seq integer primary key autoincrement,
             id text,
-            date text,
+            startdate text,
+            enddate text,
             title text,
             task text,
             starttime text,
@@ -79,11 +80,11 @@ class DatabaseHandler {
     result = await db.rawInsert(
       """
       insert into todolist
-      (id, date, title, task, starttime, endtime)
+      (id, startdate, enddate, title, task, starttime, endtime)
       values
-      (?,?,?,?,?,?)
+      (?,?,?,?,?,?,?)
       """,
-      [todo.id, todo.date, todo.title, todo.task, todo.starttime, todo.endtime]
+      [todo.id, todo.startdate, todo.enddate, todo.title, todo.task, todo.starttime, todo.endtime]
     );
     return result;
   } 
@@ -110,26 +111,44 @@ class DatabaseHandler {
           """
           select * from todolist
           where id = ? and "end" = 0
-          order by date asc, endtime asc
+          order by enddate asc, endtime asc
           """,
           [userid]
         );
     return queryResult.map((e) => TodoList.fromMap(e)).toList();
   }
 
-  // Query : TodoList by date
+  // Query : TodoList by Date
   Future<List<TodoList>> queryTodoListDate(String userid, String date) async {
-  final db = await initializeDB();
-  final result = await db.rawQuery(
-    """
-    select * from todolist
-    where id = ? and date = ?
-    order by starttime asc
-    """,
-    [userid, date],
-  );
-  return result.map((e) => TodoList.fromMap(e)).toList();
-}
+    final db = await initializeDB();
+    final result = await db.rawQuery(
+      """
+      select * from todolist
+      where id = ? and startdate = ?
+      order by end asc, starttime asc
+      """,
+      [userid, date],
+    );
+    return result.map((e) => TodoList.fromMap(e)).toList();
+  }
+
+  // Query : TodoList by Date(Range)
+  Future<List<TodoList>> queryTodoListDateRange(String userid, String selectedDate) async {
+    final db = await initializeDB();
+
+    final List<Map<String, dynamic>> result = await db.rawQuery(
+      '''
+      select * from todolist
+      where id = ?
+        and startdate <= ?
+        and enddate >= ?
+      order by startdate asc, starttime asc
+      ''',
+      [userid, selectedDate, selectedDate],
+    );
+
+    return result.map((e) => TodoList.fromMap(e)).toList();
+  }
 
   // Update : UserList (이미지 변경 X)
   Future<int> updateUserList(UserList user) async{
@@ -168,10 +187,10 @@ class DatabaseHandler {
     result = await db.rawUpdate(
       """
       update todolist
-      set date = ?, set title = ?, set task = ?, set starttime = ?, set endtime = ?
+      set startdate = ?, set enddate = ?, set title = ?, set task = ?, set starttime = ?, set endtime = ?
       where seq = ?
       """,
-      [todo.date, todo.title, todo.task, todo.starttime, todo.endtime, todo.seq]
+      [todo.startdate, todo.enddate, todo.title, todo.task, todo.starttime, todo.endtime, todo.seq]
     );
     return result;
   }
@@ -202,32 +221,52 @@ class DatabaseHandler {
     return result.map((e) => TodoList.fromMap(e)).toList();
   }
 
-  // End Update
   Future<int> updateEnd(String userid) async {
     final db = await initializeDB();
-
     final now = DateTime.now();
-    final String today =
-        "${now.year.toString().padLeft(4, '0')}-"
-        "${now.month.toString().padLeft(2, '0')}-"
-        "${now.day.toString().padLeft(2, '0')}";
-    final String currentTime =
-        "${now.hour.toString().padLeft(2, '0')}:"
-        "${now.minute.toString().padLeft(2, '0')}";
 
-    return await db.rawUpdate(
+    // 아직 완료 처리 안 된 일정만 가져오기
+    final List<Map<String, dynamic>> rows = await db.rawQuery(
       """
-      update todolist
-      set "end" = 1
-      where id = ?
-        and "end" = 0
-        and (
-          date < ?
-          or (date = ? and endtime <= ?)
-        )
+      select seq, startdate, enddate, starttime, endtime
+      from todolist
+      where id = ? and "end" = 0
       """,
-      [userid, today, today, currentTime],
+      [userid],
     );
+
+    int updatedCount = 0;
+
+    for (final row in rows) {
+      final String startdate = row['startdate'] as String;
+      final String enddate   = row['enddate'] as String;
+      final String starttime = row['starttime'] as String;
+      final String endtime   = row['endtime'] as String;
+
+      // 문자열 → DateTime
+      DateTime startDt = DateTime.parse('$startdate $starttime:00');
+      DateTime endDt   = DateTime.parse('$enddate $endtime:00');
+
+      // 혹시 잘못 입력해서 endDt가 startDt보다 빠르면 방어적으로 하루 더해줌
+      if (endDt.isBefore(startDt)) {
+        endDt = endDt.add(const Duration(days: 1));
+      }
+
+      // 현재 시간이 종료 시각을 지났으면 end = 1로 업데이트
+      if (!now.isBefore(endDt)) { // now >= endDt
+        final int cnt = await db.rawUpdate(
+          """
+          update todolist
+          set "end" = 1
+          where seq = ?
+          """,
+          [row['seq']],
+        );
+        updatedCount += cnt;
+      }
+    }
+
+    return updatedCount;
   }
 
   // End 검색
@@ -244,7 +283,7 @@ class DatabaseHandler {
   }
 
   // Delete : UserList
-  Future<void> deleteUserlist(int id) async{
+  Future<void> deleteUserlist(String id) async{
     final Database db = await initializeDB();
     await db.rawUpdate(
       """

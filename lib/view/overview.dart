@@ -40,6 +40,49 @@ class OverviewState extends State<Overview> {
     setState(() {});
   }
 
+  String formatDateTimeText(String startdate, String enddate, String start, String end) {
+    final now = DateTime.now();
+    final todayStr =
+        '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+
+    final DateTime startDT = DateTime.parse('$startdate $start:00');
+    DateTime endDT = DateTime.parse('$enddate $end:00');
+
+    if (!endDT.isAfter(startDT)) {
+      endDT = endDT.add(const Duration(days: 1));
+    }
+
+    String formatTime(DateTime dt) {
+      final h = dt.hour.toString().padLeft(2, '0');
+      final m = dt.minute.toString().padLeft(2, '0');
+      return '$h:$m';
+    }
+
+    String formatDayTime(DateTime dt) {
+      return '${dt.month}월 ${dt.day}일 ${formatTime(dt)}';
+    }
+
+    final bool sameDay =
+        startDT.year == endDT.year &&
+        startDT.month == endDT.month &&
+        startDT.day == endDT.day;
+
+    if (sameDay) {
+      if (startdate == todayStr) {
+        return '${formatTime(startDT)} ~ ${formatTime(endDT)}';
+      } else {
+        return '${startDT.month}월 ${startDT.day}일 '
+               '${formatTime(startDT)} ~ ${formatTime(endDT)}';
+      }
+    } else {
+      final startStr = formatDayTime(startDT);
+      final endStr = formatDayTime(endDT);
+      return '$startStr ~ $endStr';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -139,16 +182,23 @@ class OverviewState extends State<Overview> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Padding(
-                                        padding: const EdgeInsets.all(6.0),
+                                        padding: const EdgeInsets.all(5.0),
                                         child: Text(snapshot.data![index].title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                                       ),
                                       Padding(
-                                        padding: const EdgeInsets.all(6.0),
+                                        padding: const EdgeInsets.all(5.0),
                                         child: Text(snapshot.data![index].task, style: TextStyle(fontSize: 12)),
                                       ),
                                       Padding(
                                         padding: const EdgeInsets.all(5.0),
-                                        child: Text('${snapshot.data![index].starttime} ~ ${snapshot.data![index].endtime}'),
+                                        child: Text(
+                                          formatDateTimeText(
+                                            snapshot.data![index].startdate,   // ← 수정
+                                            snapshot.data![index].enddate,     // ← 수정
+                                            snapshot.data![index].starttime,
+                                            snapshot.data![index].endtime,
+                                          ),
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -199,12 +249,28 @@ class OverviewState extends State<Overview> {
                                       padding: const EdgeInsets.fromLTRB(10, 12, 15, 12),
                                       child: Icon(Icons.circle, color: Colors.grey),
                                     ),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(snapshot.data![index].title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                        Text(snapshot.data![index].task),
-                                      ],
+                                    SizedBox(
+                                      width: MediaQuery.of(context).size.width*0.8,
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(snapshot.data![index].title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                              Text(snapshot.data![index].task),
+                                            ],
+                                          ),
+                                          Text(
+                                            formatDateTimeText(
+                                              snapshot.data![index].startdate,   // ← 수정
+                                              snapshot.data![index].enddate,     // ← 수정
+                                              snapshot.data![index].starttime,
+                                              snapshot.data![index].endtime,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),

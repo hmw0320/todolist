@@ -17,19 +17,18 @@ class AddView extends StatefulWidget {
 }
 
 class _AddViewState extends State<AddView> {
-
   late TextEditingController titleController;
   late TextEditingController taskController;
   late DatabaseHandler handler;
 
-  DateTime _focusedDay = DateTime.now();
-  DateTime _selectedDay = DateTime.now();
+  DateTime _startSelectedDay = DateTime.now();
+  DateTime _endSelectedDay   = DateTime.now();
 
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
 
-  Duration _startDuration = Duration(hours: 9);
-  Duration _endDuration   = Duration(hours: 10);
+  Duration _startDuration = const Duration(hours: 9);
+  Duration _endDuration   = const Duration(hours: 10);
 
   Message message = Message();
 
@@ -39,44 +38,165 @@ class _AddViewState extends State<AddView> {
     titleController = TextEditingController();
     taskController = TextEditingController();
     handler = DatabaseHandler();
+
+    final now = DateTime.now();
+    _startTime = TimeOfDay(hour: now.hour, minute: now.minute);
+
+    final endMinute = now.minute + 30;
+    _endTime = TimeOfDay(
+        hour: now.hour + endMinute ~/ 60,
+        minute: endMinute % 60
+    );
+
+    _startDuration = Duration(hours: now.hour, minutes: now.minute);
+    _endDuration   = Duration(hours: _endTime!.hour, minutes: _endTime!.minute);
   }
 
-  @override
-  void dispose() {
-    titleController.dispose();
-    taskController.dispose();
-    super.dispose();
+  String _formatDate(DateTime date) =>
+      "${date.year.toString().padLeft(4,'0')}-"
+      "${date.month.toString().padLeft(2,'0')}-"
+      "${date.day.toString().padLeft(2,'0')}";
+
+  String _formatTime(TimeOfDay time) =>
+      "${time.hour.toString().padLeft(2,'0')}:${time.minute.toString().padLeft(2,'0')}";
+
+  Future<void> _pickDate(bool isStart) async {
+    DateTime temp = isStart ? _startSelectedDay : _endSelectedDay;
+
+    final result = await showDialog<DateTime>(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: Text(isStart ? "시작 날짜 선택" : "종료 날짜 선택"),
+          content: StatefulBuilder(
+            builder: (context, setStateDialog) {
+              return SizedBox(
+                width: MediaQuery.of(context).size.width * 0.85,
+                height: 350,
+                child: TableCalendar(
+                  firstDay: DateTime.now().subtract(const Duration(days: 365 * 5)),
+                  lastDay: DateTime.now().add(const Duration(days: 365 * 5)),
+                  focusedDay: temp,
+                  selectedDayPredicate: (day) => isSameDay(day, temp),
+                  onDaySelected: (day, _) =>
+                      setStateDialog(() => temp = day),
+                  headerStyle: HeaderStyle(formatButtonVisible: false, titleCentered: true),
+                ),
+              );
+            },
+          ),
+          actions: [
+            TextButton(onPressed: () => Get.back(), child: Text("취소")),
+            TextButton(onPressed: () => Get.back(result: temp), child: Text("확인"))
+          ],
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() {
+        if (isStart) {
+          _startSelectedDay = result;
+          if (_endSelectedDay.isBefore(_startSelectedDay)) {
+            _endSelectedDay = result;
+          }
+        } else {
+          _endSelectedDay = result;
+        }
+      });
+    }
   }
 
-  final DateTime _firstDay = DateTime(
-    DateTime.now().year - 5,
-    DateTime.now().month,
-    DateTime.now().day,
-  );
+  Future<void> _pickTime(bool isStart) async {
+    Duration temp = isStart ? _startDuration : _endDuration;
 
-  final DateTime _lastDay = DateTime(
-    DateTime.now().year + 5,
-    DateTime.now().month,
-    DateTime.now().day,
-  );
+    final picked = await showCupertinoModalPopup<Duration>(
+      context: context,
+      builder: (_) {
+        return Container(
+          height: 260,
+          color: Colors.white,
+          child: Column(
+            children: [
+              SizedBox(
+                height: 200,
+                child: CupertinoTimerPicker(
+                  mode: CupertinoTimerPickerMode.hm,
+                  initialTimerDuration: temp,
+                  onTimerDurationChanged: (value) => temp = value,
+                ),
+              ),
+              CupertinoButton(
+                child: Text("확인"),
+                onPressed: () => Navigator.pop(context, temp),
+              ),
+            ],
+          ),
+        );
+      },
+    );
 
-  String _formatDate(DateTime date) {
-    final year = date.year.toString().padLeft(4, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final day = date.day.toString().padLeft(2, '0');
-    return "$year-$month-$day";
+    if (picked != null) {
+      setState(() {
+        final h = picked.inHours;
+        final m = picked.inMinutes.remainder(60);
+
+        if (isStart) {
+          _startDuration = picked;
+          _startTime = TimeOfDay(hour: h, minute: m);
+        } else {
+          _endDuration = picked;
+          _endTime = TimeOfDay(hour: h, minute: m);
+        }
+      });
+    }
   }
 
-  String _formatTime(TimeOfDay time) {
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-    return "$hour:$minute";
-  }
+  insertAction() async {
+    if (titleController.text.trim().isEmpty) {
+      message.snackBar("오류", "제목을 입력하세요");
+      return;
+    }
+    if (_startTime == null || _endTime == null) {
+      message.snackBar("오류", "시간을 입력하세요");
+      return;
+    }
 
-  String _formatDurationToHM(Duration d) {
-    final h = d.inHours;
-    final m = d.inMinutes.remainder(60);
-    return "${h.toString().padLeft(2, '0')}시 ${m.toString().padLeft(2, '0')}분";
+    final startDT = DateTime(_startSelectedDay.year, _startSelectedDay.month,
+        _startSelectedDay.day, _startTime!.hour, _startTime!.minute);
+    final endDT = DateTime(_endSelectedDay.year, _endSelectedDay.month,
+        _endSelectedDay.day, _endTime!.hour, _endTime!.minute);
+
+    if (!endDT.isAfter(startDT)) {
+      message.snackBar("오류", "종료 일시가 시작 일시보다 늦어야 합니다.");
+      return;
+    }
+
+    final todo = TodoList(
+      id: widget.userid,
+      startdate: _formatDate(_startSelectedDay),
+      enddate: _formatDate(_endSelectedDay),
+      title: titleController.text.trim(),
+      task: taskController.text.trim(),
+      starttime: _formatTime(_startTime!),
+      endtime: _formatTime(_endTime!),
+    );
+
+    int result = await handler.insertTodoList(todo);
+
+    if (result > 0) {
+      Get.defaultDialog(
+        title: "완료",
+        middleText: "일정이 저장되었습니다.",
+        barrierDismissible: false,
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: Text("OK")),
+        ],
+      );
+
+      widget.onSaved();
+      setState(() {});
+    }
   }
 
   @override
@@ -85,196 +205,84 @@ class _AddViewState extends State<AddView> {
       appBar: AppBar(
         backgroundColor: Colors.lightBlue[700],
         foregroundColor: Colors.white,
-        title: Text('일정 추가'),
+        title: Text("일정 추가"),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            TableCalendar(
-              firstDay: _firstDay,
-              lastDay: _lastDay,
-              focusedDay: _focusedDay,
-              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-              onDaySelected: (selectedDay, focusedDay) {
-                setState(() {
-                  _selectedDay = selectedDay;
-                  _focusedDay = focusedDay;
-                });
-              },
-              calendarFormat: CalendarFormat.month,
-              headerStyle: HeaderStyle(
-                formatButtonVisible: false,
-                titleCentered: true,
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: ListTile(
+                title: Text("시작 날짜", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                subtitle: Text(_formatDate(_startSelectedDay)),
+                trailing: Icon(Icons.calendar_month),
+                onTap: () => _pickDate(true),
               ),
             ),
 
-            // 시작 시간 ------------------
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '시작 시간',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(
-                  height: 100,
-                  child: CupertinoTimerPicker(
-                    mode: CupertinoTimerPickerMode.hm,
-                    initialTimerDuration: _startDuration,
-                    onTimerDurationChanged: (Duration value) {
-                      setState(() {
-                        _startDuration = value;
-                        final h = value.inHours;
-                        final m = value.inMinutes.remainder(60);
-                        _startTime = TimeOfDay(hour: h, minute: m);
-                      });
-                    },
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // 🔹 여기에 한국어 형식으로 표시
-                Text(
-                  _formatDurationToHM(_startDuration),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: ListTile(
+                title: Text("종료 날짜", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                subtitle: Text(_formatDate(_endSelectedDay)),
+                trailing: Icon(Icons.calendar_month),
+                onTap: () => _pickDate(false),
+              ),
             ),
 
-            // 종료 시간 ------------------
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '종료 시간',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(
-                  height: 100,
-                  child: CupertinoTimerPicker(
-                    mode: CupertinoTimerPickerMode.hm,
-                    initialTimerDuration: _endDuration,
-                    onTimerDurationChanged: (Duration value) {
-                      setState(() {
-                        _endDuration = value;
-                        final h = value.inHours;
-                        final m = value.inMinutes.remainder(60);
-                        _endTime = TimeOfDay(hour: h, minute: m);
-                      });
-                    },
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // 🔹 종료 시간도 같은 형식으로 표시
-                Text(
-                  _formatDurationToHM(_endDuration),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            TextField(
-              controller: titleController,
-              decoration: InputDecoration(
-                labelText: '제목을 입력하세요',
-                border: OutlineInputBorder(),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: ListTile(
+                title: Text("시작 시간", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                subtitle: Text(_formatTime(_startTime!)),
+                trailing: Icon(Icons.access_time),
+                onTap: () => _pickTime(true),
               ),
             ),
-            TextField(
-              controller: taskController,
-              maxLines: 4,
-              decoration: InputDecoration(
-                labelText: '내용을 입력하세요',
-                border: OutlineInputBorder(),
+
+            Padding(
+              padding: const EdgeInsets.only(bottom: 18),
+              child: ListTile(
+                title: Text("종료 시간", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                subtitle: Text(_formatTime(_endTime!)),
+                trailing: Icon(Icons.access_time),
+                onTap: () => _pickTime(false),
               ),
             ),
-            ElevatedButton(
-              onPressed: () => insertAction(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.lightBlue,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(5),
-                ),
+
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: TextField(
+                controller: titleController,
+                decoration: InputDecoration(labelText: "제목을 입력하세요", border: OutlineInputBorder()),
               ),
-              child: Text('저장'),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.only(bottom: 18),
+              child: TextField(
+                controller: taskController,
+                maxLines: 4,
+                decoration: InputDecoration(labelText: "내용을 입력하세요", border: OutlineInputBorder()),
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.only(bottom: 30),
+              child: ElevatedButton(
+                onPressed: insertAction,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.lightBlue,
+                  foregroundColor: Colors.white,
+                ),
+                child: Text("저장"),
+              ),
             ),
           ],
         ),
       ),
     );
-  } // build
-
-  // Functions ---------------------------
-  insertAction() async {
-    if (titleController.text.trim().isEmpty) {
-      message.snackBar('오류', '제목을 입력하세요');
-      return;
-    }
-
-    if (_startTime == null || _endTime == null) {
-      message.snackBar('오류', '시간을 입력하세요');
-      return;
-    }
-
-    int startInMinutes = _startTime!.hour * 60 + _startTime!.minute;
-    int endInMinutes = _endTime!.hour * 60 + _endTime!.minute;
-
-    if (startInMinutes >= endInMinutes) {
-      message.snackBar('오류', '종료 시간은 시작 시간보다 늦어야 합니다.');
-      return;
-    }
-
-    final String date = _formatDate(_selectedDay);
-    final String start = _formatTime(_startTime!);
-    final String end = _formatTime(_endTime!);
-
-    final todo = TodoList(
-      id: widget.userid,
-      date: date,
-      title: titleController.text.trim(),
-      task: taskController.text.trim(),
-      starttime: start,
-      endtime: end,
-    );
-
-    int result = await handler.insertTodoList(todo);
-
-    if (result == 0) {
-      message.snackBar('오류', '저장 중 오류가 발생했습니다.');
-    } else {
-      Get.defaultDialog(
-        title: '완료',
-        middleText: '일정이 저장되었습니다.',
-        backgroundColor: Color.fromARGB(255, 193, 197, 201),
-        barrierDismissible: false,
-        actions: [
-          TextButton(
-            onPressed: () {
-              Get.back();
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.black,
-            ),
-            child: Text('OK'),
-          ),
-        ],
-      );
-      widget.onSaved();
-      titleController.clear();
-      taskController.clear();
-      _startTime = null;
-      _endTime = null;
-      _startDuration = Duration(hours: 9);
-      _endDuration = Duration(hours: 10);
-      setState(() {});
-    }
   }
-
-} // class
+}

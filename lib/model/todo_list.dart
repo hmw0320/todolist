@@ -2,7 +2,8 @@ class TodoList {
 
   int? seq;          // PK,AI
   String id;         // UserId
-  String date;     // 날짜
+  String startdate;       // 날짜
+  String enddate;       // 날짜
   String title;      // 일정 제목
   String task;       // 일정 내용
   String starttime;  // 시작 시간
@@ -15,7 +16,8 @@ class TodoList {
     {
       this.seq,
       required this.id,
-      required this.date,
+      required this.startdate,
+      required this.enddate,
       required this.title,
       required this.task,
       required this.starttime,
@@ -28,12 +30,13 @@ class TodoList {
   TodoList.fromMap(Map<String, dynamic> res)
   : seq = res['seq'],
     id = res['id'],
-    date = res['date'],
+    startdate = res['startdate'],
+    enddate = res['enddate'],
     title = res['title'],
     task = res['task'],
     starttime = res['starttime'],
     endtime = res['endtime'],
-    fav = res['fav'] == 1 ? true : false,
-    end = res['fav'] == 1 ? true : false;
+    fav = res['fav'] == 1,
+    end = res['end'] == 1;
 
 }

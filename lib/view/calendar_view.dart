@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:todolist_app/model/todo_list.dart';
 import 'package:todolist_app/model/user_list.dart';
 import 'package:todolist_app/util/calendar_list.dart';
 import 'package:todolist_app/vm/database_handler.dart';
@@ -51,45 +50,34 @@ class CalendarViewState extends State<CalendarView> {
         ),
         backgroundColor: Colors.lightBlue,
       ),
-      body: Column(
-        children: [
-          CalendarList(
-            startDate: DateTime.now(),
-            dayCount: 7,
-            selectedDay: _selectedDay,
-            onDaySelected: (day) {
-              setState(() {
-                _selectedDay = day;
-              });
-            },
-          ),
-          Expanded(
-            child: Padding(
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            CalendarList(
+              startDate: DateTime.now(),
+              dayCount: 7,
+              selectedDay: _selectedDay,
+              onDaySelected: (day) {
+                setState(() {
+                  _selectedDay = day;
+                });
+              },
+            ),
+            Padding(
               padding: const EdgeInsets.all(10.0),
               child: SizedBox(
                 width: MediaQuery.of(context).size.width,
-                // height는 Expanded가 잡아주니까 굳이 안 줘도 됨
-                child: FutureBuilder<List<TodoList>>(
-                  future: handler.queryTodoListDate(widget.userid, selectedDateString),
+                height: MediaQuery.of(context).size.height,
+                child: FutureBuilder(
+                  future: () async {
+                    await handler.updateEnd(widget.userid);
+                    return handler.queryTodoListDateRange(widget.userid, selectedDateString);
+                  }(),
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-
-                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.7,
-                        height: MediaQuery.of(context).size.width * 0.25,
-                        child: const Center(child: Text('해당 날짜의 일정이 없습니다.')),
-                      );
-                    }
-
-                    final list = snapshot.data!;
-
-                    return ListView.builder(
-                      itemCount: list.length, // 필요하면 min(list.length, 5)로 제한 가능
+                    return snapshot.hasData && snapshot.data!.isNotEmpty
+                    ? ListView.builder(
+                      itemCount: snapshot.data!.length,
                       itemBuilder: (context, index) {
-                        final todo = list[index];
                         return SizedBox(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,31 +86,28 @@ class CalendarViewState extends State<CalendarView> {
                                 padding: const EdgeInsets.fromLTRB(0, 5, 0, 5),
                                 child: Row(
                                   children: [
-                                    const Padding(
+                                    Padding(
                                       padding: EdgeInsets.fromLTRB(10, 12, 15, 12),
-                                      child: Icon(Icons.circle, color: Colors.grey),
+                                      child: Icon(Icons.circle, color: snapshot.data![index].end ? Colors.grey : Colors.orange)
                                     ),
                                     Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        // 제목
                                         Text(
-                                          todo.title,
-                                          style: const TextStyle(
+                                          snapshot.data![index].title,
+                                          style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 16,
                                           ),
                                         ),
-                                        // 시간
+                                        Text(snapshot.data![index].task),
                                         Text(
-                                          '${todo.starttime} ~ ${todo.endtime}',
+                                          '${snapshot.data![index].starttime} ~ ${snapshot.data![index].endtime}',
                                           style: TextStyle(
                                             fontSize: 12,
                                             color: Colors.grey[600],
                                           ),
                                         ),
-                                        // 내용
-                                        Text(todo.task),
                                       ],
                                     ),
                                   ],
@@ -132,13 +117,18 @@ class CalendarViewState extends State<CalendarView> {
                           ),
                         );
                       },
-                    );
+                    )
+                    : SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.7,
+                      height: MediaQuery.of(context).size.width * 0.25,
+                      child: Center(child: Text('해당 날짜의 일정이 없습니다.')));
+                      
                   },
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
