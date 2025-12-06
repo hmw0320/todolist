@@ -2,8 +2,8 @@ class TodoList {
 
   int? seq;          // PK,AI
   String id;         // UserId
-  String startdate;       // 날짜
-  String enddate;       // 날짜
+  String startdate;  // 시작 날짜
+  String enddate;    // 종료 날짜
   String title;      // 일정 제목
   String task;       // 일정 내용
   String starttime;  // 시작 시간

@@ -150,6 +150,43 @@ class DatabaseHandler {
     return result.map((e) => TodoList.fromMap(e)).toList();
   }
 
+  // 오늘 완료/총 일정 개수 조회
+  Future<Map<String, int>> getTodayTaskCounts(String userid) async {
+    final db = await initializeDB();
+
+    final now = DateTime.now();
+    final String today =
+        "${now.year.toString().padLeft(4, '0')}-"
+        "${now.month.toString().padLeft(2, '0')}-"
+        "${now.day.toString().padLeft(2, '0')}";
+
+    final List<Map<String, Object?>> result = await db.rawQuery(
+      """
+      select 
+        count(*) as total,
+        sum(case when "end" = 1 then 1 else 0 end) as completed
+      from todolist
+      where id = ? 
+        and enddate = ?
+      """,
+      [userid, today],
+    );
+
+    if (result.isEmpty) {
+      return {'total': 0, 'completed': 0};
+    }
+
+    final row = result.first;
+    final int total = (row['total'] as int?) ?? 0;
+    final int completed = (row['completed'] as int?) ?? 0;
+
+    return {
+      'total': total,
+      'completed': completed,
+    };
+  }
+
+
   // Update : UserList (이미지 변경 X)
   Future<int> updateUserList(UserList user) async{
     int result = 0;
@@ -187,7 +224,7 @@ class DatabaseHandler {
     result = await db.rawUpdate(
       """
       update todolist
-      set startdate = ?, set enddate = ?, set title = ?, set task = ?, set starttime = ?, set endtime = ?
+      set startdate = ?, enddate = ?, title = ?, task = ?, starttime = ?, endtime = ?
       where seq = ?
       """,
       [todo.startdate, todo.enddate, todo.title, todo.task, todo.starttime, todo.endtime, todo.seq]

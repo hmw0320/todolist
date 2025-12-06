@@ -30,7 +30,7 @@ class Message {
           style: TextButton.styleFrom(
               foregroundColor: Colors.black,
           ),
-          child: const Text('OK'),
+          child: Text('OK'),
         ),
       ],
     );

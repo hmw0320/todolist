@@ -6,17 +6,21 @@ import 'package:todolist_app/model/todo_list.dart';
 import 'package:todolist_app/util/message.dart';
 import 'package:todolist_app/vm/database_handler.dart';
 
-class AddView extends StatefulWidget {
-  final String userid;
-  final VoidCallback onSaved;
+class EditView extends StatefulWidget {
+  final TodoList todo;        // 수정할 일정
+  final VoidCallback onUpdated;
 
-  const AddView({super.key, required this.userid, required this.onSaved});
+  const EditView({
+    super.key,
+    required this.todo,
+    required this.onUpdated,
+  });
 
   @override
-  State<AddView> createState() => _AddViewState();
+  State<EditView> createState() => _EditViewState();
 }
 
-class _AddViewState extends State<AddView> {
+class _EditViewState extends State<EditView> {
   late TextEditingController titleController;
   late TextEditingController taskController;
   late DatabaseHandler handler;
@@ -27,36 +31,45 @@ class _AddViewState extends State<AddView> {
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
 
-  Duration _startDuration = Duration(hours: 9);
-  Duration _endDuration   = Duration(hours: 10);
+  Duration _startDuration = const Duration(hours: 9);
+  Duration _endDuration   = const Duration(hours: 10);
 
   Message message = Message();
 
   @override
-    void initState() {
-      super.initState();
-      titleController = TextEditingController();
-      taskController = TextEditingController();
-      handler = DatabaseHandler();
-      _resetForm();
-    }
+  void initState() {
+    super.initState();
+    handler = DatabaseHandler();
 
-  void _resetForm() {
-    titleController.clear();
-    taskController.clear();
+    // 🔹 텍스트 필드 초기값
+    titleController = TextEditingController(text: widget.todo.title);
+    taskController  = TextEditingController(text: widget.todo.task);
 
-    final now = DateTime.now();
-    final startDT = now;
-    final endDT = now.add(const Duration(minutes: 30));
+    // 🔹 날짜 초기값
+    _startSelectedDay = DateTime.parse(widget.todo.startdate);
+    _endSelectedDay   = DateTime.parse(widget.todo.enddate);
 
-    _startSelectedDay = DateTime(startDT.year, startDT.month, startDT.day);
-    _endSelectedDay   = DateTime(endDT.year,   endDT.month,   endDT.day);
+    // 🔹 시간 초기값 (문자열 "HH:MM" 파싱)
+    final startSplit = widget.todo.starttime.split(':');
+    final endSplit   = widget.todo.endtime.split(':');
 
-    _startTime = TimeOfDay(hour: startDT.hour, minute: startDT.minute);
-    _endTime   = TimeOfDay(hour: endDT.hour,   minute: endDT.minute);
+    _startTime = TimeOfDay(
+      hour: int.parse(startSplit[0]),
+      minute: int.parse(startSplit[1]),
+    );
+    _endTime = TimeOfDay(
+      hour: int.parse(endSplit[0]),
+      minute: int.parse(endSplit[1]),
+    );
 
-    _startDuration = Duration(hours: startDT.hour, minutes: startDT.minute);
-    _endDuration   = Duration(hours: endDT.hour,   minutes: endDT.minute);
+    _startDuration = Duration(
+      hours: _startTime!.hour,
+      minutes: _startTime!.minute,
+    );
+    _endDuration = Duration(
+      hours: _endTime!.hour,
+      minutes: _endTime!.minute,
+    );
   }
 
   String _formatDate(DateTime date) =>
@@ -81,13 +94,16 @@ class _AddViewState extends State<AddView> {
                 width: MediaQuery.of(context).size.width * 0.85,
                 height: 350,
                 child: TableCalendar(
-                  firstDay: DateTime.now().subtract(const Duration(days: 365 * 5)),
-                  lastDay: DateTime.now().add(const Duration(days: 365 * 5)),
+                  firstDay: DateTime.now().subtract(Duration(days: 365 * 5)),
+                  lastDay: DateTime.now().add(Duration(days: 365 * 5)),
                   focusedDay: temp,
                   selectedDayPredicate: (day) => isSameDay(day, temp),
                   onDaySelected: (day, _) =>
                       setStateDialog(() => temp = day),
-                  headerStyle: HeaderStyle(formatButtonVisible: false, titleCentered: true),
+                  headerStyle: HeaderStyle(
+                    formatButtonVisible: false,
+                    titleCentered: true,
+                  ),
                 ),
               );
             },
@@ -159,13 +175,14 @@ class _AddViewState extends State<AddView> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.lightBlue[700],
         foregroundColor: Colors.white,
-        title: Text("일정 추가"),
+        title: Text("일정 수정"),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -175,7 +192,10 @@ class _AddViewState extends State<AddView> {
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: ListTile(
-                title: Text("시작 날짜", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                title: Text(
+                  "시작 날짜",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
                 subtitle: Text(_formatDate(_startSelectedDay)),
                 trailing: Icon(Icons.calendar_month),
                 onTap: () => _pickDate(true),
@@ -185,7 +205,10 @@ class _AddViewState extends State<AddView> {
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: ListTile(
-                title: Text("종료 날짜", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                title: Text(
+                  "종료 날짜",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
                 subtitle: Text(_formatDate(_endSelectedDay)),
                 trailing: Icon(Icons.calendar_month),
                 onTap: () => _pickDate(false),
@@ -195,7 +218,10 @@ class _AddViewState extends State<AddView> {
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: ListTile(
-                title: Text("시작 시간", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                title: Text(
+                  "시작 시간",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
                 subtitle: Text(_formatTime(_startTime!)),
                 trailing: Icon(Icons.access_time),
                 onTap: () => _pickTime(true),
@@ -205,7 +231,10 @@ class _AddViewState extends State<AddView> {
             Padding(
               padding: const EdgeInsets.only(bottom: 18),
               child: ListTile(
-                title: Text("종료 시간", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                title: Text(
+                  "종료 시간",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
                 subtitle: Text(_formatTime(_endTime!)),
                 trailing: Icon(Icons.access_time),
                 onTap: () => _pickTime(false),
@@ -216,7 +245,10 @@ class _AddViewState extends State<AddView> {
               padding: const EdgeInsets.only(bottom: 12),
               child: TextField(
                 controller: titleController,
-                decoration: InputDecoration(labelText: "제목을 입력하세요", border: OutlineInputBorder()),
+                decoration: InputDecoration(
+                  labelText: "제목을 입력하세요",
+                  border: OutlineInputBorder(),
+                ),
               ),
             ),
 
@@ -225,19 +257,35 @@ class _AddViewState extends State<AddView> {
               child: TextField(
                 controller: taskController,
                 maxLines: 4,
-                decoration: InputDecoration(labelText: "내용을 입력하세요", border: OutlineInputBorder()),
+                decoration: InputDecoration(
+                  labelText: "내용을 입력하세요",
+                  border: OutlineInputBorder(),
+                ),
               ),
             ),
 
             Padding(
               padding: const EdgeInsets.only(bottom: 30),
-              child: ElevatedButton(
-                onPressed: insertAction,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.lightBlue,
-                  foregroundColor: Colors.white,
-                ),
-                child: Text("저장"),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    onPressed: updateAction,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.lightBlue,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text("수정"),
+                  ),
+                  ElevatedButton(
+                    onPressed: deleteAction,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,   // 삭제 → 빨간색
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text("삭제"),
+                  ),
+                ],
               ),
             ),
           ],
@@ -246,8 +294,8 @@ class _AddViewState extends State<AddView> {
     );
   } // build
 
-  // Functions ------------------------------
-  insertAction() async {
+  // Functions ---------------------------------
+  updateAction() async {
     if (titleController.text.trim().isEmpty) {
       message.snackBar("오류", "제목을 입력하세요");
       return;
@@ -257,42 +305,62 @@ class _AddViewState extends State<AddView> {
       return;
     }
 
-    final startDT = DateTime(_startSelectedDay.year, _startSelectedDay.month,
-        _startSelectedDay.day, _startTime!.hour, _startTime!.minute);
-    final endDT = DateTime(_endSelectedDay.year, _endSelectedDay.month,
-        _endSelectedDay.day, _endTime!.hour, _endTime!.minute);
+    final startDT = DateTime(
+      _startSelectedDay.year,
+      _startSelectedDay.month,
+      _startSelectedDay.day,
+      _startTime!.hour,
+      _startTime!.minute,
+    );
+    final endDT = DateTime(
+      _endSelectedDay.year,
+      _endSelectedDay.month,
+      _endSelectedDay.day,
+      _endTime!.hour,
+      _endTime!.minute,
+    );
 
     if (!endDT.isAfter(startDT)) {
       message.snackBar("오류", "종료 일시가 시작 일시보다 늦어야 합니다.");
       return;
     }
 
-    final todo = TodoList(
-      id: widget.userid,
+    final updated = TodoList(
+      seq: widget.todo.seq,                 // ★ 수정 대상 row 지정
+      id: widget.todo.id,                   // 유저 ID는 그대로
       startdate: _formatDate(_startSelectedDay),
       enddate: _formatDate(_endSelectedDay),
       title: titleController.text.trim(),
       task: taskController.text.trim(),
       starttime: _formatTime(_startTime!),
       endtime: _formatTime(_endTime!),
+      fav: widget.todo.fav,                 // 즐겨찾기 유지
+      end: widget.todo.end,                 // 완료 여부 유지 (필요하면 여기서도 제어 가능)
     );
 
-    int result = await handler.insertTodoList(todo);
+    final result = await handler.updateTodoList(updated);
 
     if (result > 0) {
-      Get.defaultDialog(
-        title: "완료",
-        middleText: "일정이 저장되었습니다.",
-        barrierDismissible: false,
-        actions: [
-          TextButton(onPressed: () => Get.back(), child: Text("OK")),
-        ],
-      );
-
-      widget.onSaved();
-      _resetForm();
-      setState(() {});
+      widget.onUpdated();
+      Get.back(result: true);
+    } else {
+      message.snackBar("오류", "수정 중 오류가 발생했습니다.");
     }
   }
-  
+
+  deleteAction() async {
+    Get.defaultDialog(
+      title: "삭제 확인",
+      middleText: "정말 삭제하시겠습니까?",
+      textCancel: "취소",
+      textConfirm: "삭제",
+      confirmTextColor: Colors.white,
+      onConfirm: () async {
+        await handler.deleteTodolist(widget.todo.seq!);
+        widget.onUpdated();
+        Get.back();  // dialog 닫기
+        Get.back(result: true);  // EditView 닫기
+      },
+    );
+  }
 } // class
