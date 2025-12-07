@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 
 class CenterTab extends StatelessWidget {
-  final IconData icon;
 
-  const CenterTab({
-    super.key,
-    required this.icon,
-  });
+  const CenterTab({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +25,7 @@ class CenterTab extends StatelessWidget {
         ],
       ),
       child: Icon(
-        icon,
+        Icons.add,
         color: Colors.white,
         size: 28,
       ),

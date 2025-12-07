@@ -232,32 +232,6 @@ class DatabaseHandler {
     return result;
   }
 
-  // Fav 추가
-  Future<int> updateFav(int seq, bool fav) async {
-    final db = await initializeDB();
-    return await db.rawUpdate(
-      """
-      update todolist
-      set fav = ?
-      where seq = ?
-      """,
-      [fav ? 1 : 0, seq],
-    );
-  }
-
-  // Fav 검색
-  Future<List<TodoList>> queryFavList(String userid) async {
-    final db = await initializeDB();
-    final result = await db.rawQuery(
-      """
-      select * from todolist
-      where id = ? and fav = 1
-      """,
-      [userid],
-    );
-    return result.map((e) => TodoList.fromMap(e)).toList();
-  }
-
   Future<int> updateEnd(String userid) async {
     final db = await initializeDB();
     final now = DateTime.now();
@@ -313,23 +287,131 @@ class DatabaseHandler {
       """
       select * from todolist
       where id = ? and "end" = 1
+      order by enddate desc, endtime desc
       """,
       [userid],
     );
     return result.map((e) => TodoList.fromMap(e)).toList();
   }
 
-  // Delete : UserList
-  Future<void> deleteUserlist(String id) async{
-    final Database db = await initializeDB();
-    await db.rawUpdate(
+  // 검색창에서 검색
+  Future<List<TodoList>> searchTodoList(String userid, String keyword) async {
+    final db = await initializeDB();
+
+    final likeKeyword = '%$keyword%';
+
+    final List<Map<String, Object?>> result = await db.rawQuery(
       """
-        delete from userlist
-        where id = ?
+      select *
+      from todolist
+      where id = ?
+        and (title like ? or task like ?)
+      order by startdate asc, starttime asc
       """,
-      [id]
+      [userid, likeKeyword, likeKeyword],
+    );
+
+    return result.map((e) => TodoList.fromMap(e)).toList();
+  }
+
+    // 이번 주(월~일) 기준 완료/총 일정 개수 조회
+  Future<Map<String, int>> getWeekTaskCounts(String userid) async {
+    final db = await initializeDB();
+    final now = DateTime.now();
+
+    // Dart에서 이번 주 월요일, 일요일 계산
+    final int weekday = now.weekday; // 월=1 ... 일=7
+    final DateTime monday = now.subtract(Duration(days: weekday - 1));
+    final DateTime sunday = monday.add(const Duration(days: 6));
+
+    String fmt(DateTime d) =>
+        "${d.year.toString().padLeft(4, '0')}-"
+        "${d.month.toString().padLeft(2, '0')}-"
+        "${d.day.toString().padLeft(2, '0')}";
+
+    final String start = fmt(monday);
+    final String end   = fmt(sunday);
+
+    final List<Map<String, Object?>> result = await db.rawQuery(
+      """
+      select 
+        count(*) as total,
+        sum(case when "end" = 1 then 1 else 0 end) as completed
+      from todolist
+      where id = ?
+        and enddate between ? and ?
+      """,
+      [userid, start, end],
+    );
+
+    if (result.isEmpty) {
+      return {'total': 0, 'completed': 0};
+    }
+
+    final row = result.first;
+    final int total     = (row['total'] as int?) ?? 0;
+    final int completed = (row['completed'] as int?) ?? 0;
+
+    return {
+      'total': total,
+      'completed': completed,
+    };
+  }
+
+    // 이번 주(월~일) 날짜별 total/completed 통계
+  Future<List<Map<String, Object?>>> getWeekDailyStats(String userid) async {
+    final db = await initializeDB();
+    final now = DateTime.now();
+
+    final int weekday = now.weekday; // 월=1 ... 일=7
+    final DateTime monday = now.subtract(Duration(days: weekday - 1));
+    final DateTime sunday = monday.add(const Duration(days: 6));
+
+    String fmt(DateTime d) =>
+        "${d.year.toString().padLeft(4, '0')}-"
+        "${d.month.toString().padLeft(2, '0')}-"
+        "${d.day.toString().padLeft(2, '0')}";
+
+    final String start = fmt(monday);
+    final String end   = fmt(sunday);
+
+    final List<Map<String, Object?>> result = await db.rawQuery(
+      """
+      select 
+        enddate as date,
+        count(*) as total,
+        sum(case when "end" = 1 then 1 else 0 end) as completed
+      from todolist
+      where id = ?
+        and enddate between ? and ?
+      group by enddate
+      order by enddate asc
+      """,
+      [userid, start, end],
+    );
+
+    return result;
+  }
+
+  // Delete : UserList + TodoList
+  Future<void> deleteUserAll(String userid) async {
+    final db = await initializeDB();
+    await db.rawDelete(
+      """
+      delete from todolist
+      where id = ?
+      """,
+      [userid],
+    );
+    await db.rawDelete(
+      """
+      delete from userlist
+      where id = ?
+      """,
+      [userid],
     );
   }
+
 
   // Delete : TodoList
   Future<void> deleteTodolist(int seq) async{

@@ -7,9 +7,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:todolist_app/model/user_list.dart';
 import 'package:todolist_app/util/message.dart';
 import 'package:todolist_app/vm/database_handler.dart';
+import 'package:todolist_app/view/login_view.dart';
 
 class ProfileView extends StatefulWidget {
   final String userid;
+
   const ProfileView({super.key, required this.userid});
 
   @override
@@ -17,9 +19,10 @@ class ProfileView extends StatefulWidget {
 }
 
 class _ProfileViewState extends State<ProfileView> {
-
   late TextEditingController nameController;
+  late TextEditingController deleteIdController;
   late DatabaseHandler handler;
+
   XFile? imageFile;
   UserList? user;
 
@@ -31,7 +34,15 @@ class _ProfileViewState extends State<ProfileView> {
     super.initState();
     handler = DatabaseHandler();
     nameController = TextEditingController();
+    deleteIdController = TextEditingController();
     loadUserData();
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    deleteIdController.dispose();
+    super.dispose();
   }
 
   loadUserData() async {
@@ -53,145 +64,179 @@ class _ProfileViewState extends State<ProfileView> {
         centerTitle: true,
       ),
       body: user == null
-      ? CircularProgressIndicator() 
-      : Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: ElevatedButton(
-                onPressed: () => getImageFromGallery(ImageSource.gallery),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.lightBlue,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadiusGeometry.circular(5)
-                  ),
-                ),
-                child: Text('이미지 가져오기'),
-              ),
-            ),
-            CircleAvatar(
-              radius: MediaQuery.of(context).size.width * 0.3,
-                backgroundImage: imageFile == null
-                    ? MemoryImage(user!.image)
-                    : FileImage(File(imageFile!.path)),
-              ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
+          ? Center(child: CircularProgressIndicator())
+          : Center(
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('이름: '),
-                  SizedBox(
-                    width: 200,
-                    child: TextField(
-                      controller: nameController,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(),
+                  Padding(
+                    padding: EdgeInsets.all(8),
+                    child: ElevatedButton(
+                      onPressed: () => getImageFromGallery(ImageSource.gallery),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.lightBlue,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(5),
+                        ),
                       ),
+                      child: Text('이미지 가져오기'),
+                    ),
+                  ),
+                  CircleAvatar(
+                    radius: MediaQuery.of(context).size.width * 0.3,
+                    backgroundImage: imageFile == null
+                        ? MemoryImage(user!.image)
+                        : FileImage(File(imageFile!.path)) as ImageProvider,
+                  ),
+                  Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('이름: '),
+                        SizedBox(
+                          width: 200,
+                          child: TextField(
+                            controller: nameController,
+                            decoration: InputDecoration(border: OutlineInputBorder()),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.all(8),
+                    child: ElevatedButton(
+                      onPressed: profileEdit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.lightBlue,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                      ),
+                      child: Text('수정 완료'),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.all(8),
+                    child: ElevatedButton(
+                      onPressed: _showDeleteIdDialog,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                      ),
+                      child: Text('탈퇴하기'),
                     ),
                   ),
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: ElevatedButton(
-                onPressed: () => profileEdit(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.lightBlue,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadiusGeometry.circular(5)
-                  ),
-                ),
-                child: Text('수정완료')
-              ),
-            ),
-          ],
-        ),
-      ),
     );
-  } // build
+  }
 
   Future getImageFromGallery(ImageSource imageSource) async {
     final XFile? pickedFile = await picker.pickImage(source: imageSource);
-    if (pickedFile == null) {
-      return;
-    } else {
+    if (pickedFile != null) {
       imageFile = XFile(pickedFile.path);
       setState(() {});
     }
-  } // getImageFromGallery
+  }
 
-  profileEdit() async{
-    int result = checkData(); 
-    if(result == 0){
-
-    Uint8List getImage;
-
-    if (imageFile == null) {
-      getImage = user!.image;
-    } else {
-      File imageFile1 = File(imageFile!.path);
-      getImage = await imageFile1.readAsBytes();
-    }
+  profileEdit() async {
+    int result = checkData();
+    if (result == 0) {
+      Uint8List getImage = imageFile == null
+          ? user!.image
+          : await File(imageFile!.path).readAsBytes();
 
       var userlist = UserList(
         id: user!.id,
         pw: user!.pw,
         name: nameController.text.trim(),
-        image: getImage
+        image: getImage,
       );
 
       result = await handler.updateUserListAll(userlist);
+
       result == 0
-      ? message.snackBar('DB 오류', 'Data저장시 문제가 발생했습니다')
-      :   
-      Get.defaultDialog(
-        title: '완료',
-        middleText: '수정이 완료되었습니다.',
-        backgroundColor: const Color.fromARGB(255, 193, 197, 201),
-        barrierDismissible: false,
-        actions: [
-          TextButton(
-            onPressed: () {
-              Get.back();
-              Get.back(result: true);
-            },
-            style: TextButton.styleFrom(
-                foregroundColor: Colors.black,
-            ),
-            child: const Text('OK'),
-          ),
-        ],
-      );
+          ? message.snackBar('DB 오류', 'Data 저장시 문제가 발생했습니다')
+          : Get.defaultDialog(
+              title: '완료',
+              middleText: '수정이 완료되었습니다.',
+              barrierDismissible: false,
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Get.back();
+                    Get.back(result: true);
+                  },
+                  child: Text('OK'),
+                ),
+              ],
+            );
     }
+  }
 
-  } // insertAction
-
-  // 입력 체크 : Error 조건 구성
-  int checkData(){
-    final List<Map<String, dynamic>> checks = [
-      {
-        'condition': nameController.text.trim().isEmpty,
-        'title': '이름',
-        'message': '이름을 입력 하세요',
-      },
-    ];
-
+  int checkData() {
     int result = 0;
 
-    for (var check in checks) {
-      if (check['condition']) {
-        message.snackBar(check['title'], check['message']);
-        result++;
-      }
-    }
-    
-    return result;
-  } // checkData
+    nameController.text.trim().isEmpty
+        ? () { message.snackBar('이름', '이름을 입력하세요'); result++; }()
+        : null;
 
-} // class
+    return result;
+  }
+
+  _showDeleteIdDialog() {
+    deleteIdController.text = '';
+
+    Get.defaultDialog(
+      title: '회원 탈퇴 확인',
+      content: Padding(
+        padding: EdgeInsets.all(8),
+        child: TextField(
+          controller: deleteIdController,
+          decoration: InputDecoration(
+            labelText: '아이디 입력',
+            border: OutlineInputBorder(),
+          ),
+        ),
+      ),
+      textCancel: '취소',
+      textConfirm: '확인',
+      confirmTextColor: Colors.white,
+      onConfirm: () {
+        final inputId = deleteIdController.text.trim();
+
+        inputId.isEmpty
+            ? message.snackBar('오류', '아이디를 입력하세요')
+            : inputId != user!.id
+                ? message.snackBar('오류', '아이디가 일치하지 않습니다')
+                : {
+                    Get.back(),
+                    _showFinalDeleteConfirm(),
+                  };
+      },
+    );
+  }
+
+  void _showFinalDeleteConfirm() {
+    Get.defaultDialog(
+      title: '정말 탈퇴하시겠습니까?',
+      middleText: '계정의 모든 정보가 삭제되며 복구할 수 없습니다.',
+      textCancel: '취소',
+      textConfirm: '탈퇴',
+      confirmTextColor: Colors.white,
+      onConfirm: () async {
+        await handler.deleteUserAll(user!.id);
+        Get.back();
+        Get.offAll(() => LoginView());
+      },
+    );
+  }
+}

@@ -69,7 +69,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin{
                   icon: Icon(Icons.looks_two),
                 ),
                 Tab(
-                  child: CenterTab(icon: Icons.add),
+                  child: CenterTab(),
                 ),
                 Tab(
                   icon: Icon(Icons.looks_3),
@@ -88,7 +88,6 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin{
   _onTodoSaved() {
     overviewKey.currentState?.loadUserData();
     calendarKey.currentState?.loadUserData();
-    dataKey.currentState?.loadUserData();
 
     tabController.animateTo(0);
   }
