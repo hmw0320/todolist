@@ -4,11 +4,12 @@ import 'package:get/get.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:todolist_app/model/todo_list.dart';
 import 'package:todolist_app/util/message.dart';
+import 'package:todolist_app/util/datetime.dart';
 import 'package:todolist_app/vm/database_handler.dart';
 
 class EditView extends StatefulWidget {
-  final TodoList todo;        // 수정할 일정
-  final VoidCallback onUpdated;
+  final TodoList todo;          // 수정할 일정
+  final VoidCallback onUpdated; // 수정 후 이전 화면에서 새로고침
 
   const EditView({
     super.key,
@@ -21,35 +22,35 @@ class EditView extends StatefulWidget {
 }
 
 class _EditViewState extends State<EditView> {
-  late TextEditingController titleController;
-  late TextEditingController taskController;
-  late DatabaseHandler handler;
+  late TextEditingController titleController;         // 제목 입력 창
+  late TextEditingController taskController;          // 내용 입력 창
+  late DatabaseHandler handler;                       // handler
 
-  DateTime _startSelectedDay = DateTime.now();
-  DateTime _endSelectedDay   = DateTime.now();
+  DateTime _startSelectedDay = DateTime.now();        // 선택된 시작 날짜
+  DateTime _endSelectedDay   = DateTime.now();        // 선택된 종료 날짜
 
-  TimeOfDay? _startTime;
-  TimeOfDay? _endTime;
+  TimeOfDay? _startTime;                              // 선택된 시작 시간
+  TimeOfDay? _endTime;                                // 선택된 종료 시간
 
-  Duration _startDuration = const Duration(hours: 9);
-  Duration _endDuration   = const Duration(hours: 10);
+  Duration _startDuration = Duration(hours: 9);       // CupertinoTimerPicker 초기 시작 시간
+  Duration _endDuration   = Duration(hours: 10);      // CupertinoTimerPicker 초기 종료 시간
 
-  Message message = Message();
+  Message message = Message();                        // SnackBar, Dialog
 
   @override
   void initState() {
     super.initState();
     handler = DatabaseHandler();
 
-    // 🔹 텍스트 필드 초기값
+    // TextField 초기값
     titleController = TextEditingController(text: widget.todo.title);
     taskController  = TextEditingController(text: widget.todo.task);
 
-    // 🔹 날짜 초기값
+    // 날짜 초기값
     _startSelectedDay = DateTime.parse(widget.todo.startdate);
     _endSelectedDay   = DateTime.parse(widget.todo.enddate);
 
-    // 🔹 시간 초기값 (문자열 "HH:MM" 파싱)
+    // 시간 초기값, HH:mm 형식으로
     final startSplit = widget.todo.starttime.split(':');
     final endSplit   = widget.todo.endtime.split(':');
 
@@ -72,14 +73,7 @@ class _EditViewState extends State<EditView> {
     );
   }
 
-  String _formatDate(DateTime date) =>
-      "${date.year.toString().padLeft(4,'0')}-"
-      "${date.month.toString().padLeft(2,'0')}-"
-      "${date.day.toString().padLeft(2,'0')}";
-
-  String _formatTime(TimeOfDay time) =>
-      "${time.hour.toString().padLeft(2,'0')}:${time.minute.toString().padLeft(2,'0')}";
-
+  // 날짜 선택
   Future<void> _pickDate(bool isStart) async {
     DateTime temp = isStart ? _startSelectedDay : _endSelectedDay;
 
@@ -116,6 +110,7 @@ class _EditViewState extends State<EditView> {
       },
     );
 
+  // 종료 날짜가 시작 날짜보다 빠르면 동일한 날짜로 변경
     if (result != null) {
       setState(() {
         if (isStart) {
@@ -130,6 +125,7 @@ class _EditViewState extends State<EditView> {
     }
   }
 
+  // isStart가 true면 시작 시간 선택, false면 종료 시간 선택
   Future<void> _pickTime(bool isStart) async {
     Duration temp = isStart ? _startDuration : _endDuration;
 
@@ -196,7 +192,7 @@ class _EditViewState extends State<EditView> {
                   "시작 날짜",
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-                subtitle: Text(_formatDate(_startSelectedDay)),
+                subtitle: Text(DateTimeUtil.formatDate(_startSelectedDay)),
                 trailing: Icon(Icons.calendar_month),
                 onTap: () => _pickDate(true),
               ),
@@ -209,7 +205,7 @@ class _EditViewState extends State<EditView> {
                   "종료 날짜",
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-                subtitle: Text(_formatDate(_endSelectedDay)),
+                subtitle: Text(DateTimeUtil.formatDate(_endSelectedDay)),
                 trailing: Icon(Icons.calendar_month),
                 onTap: () => _pickDate(false),
               ),
@@ -222,7 +218,7 @@ class _EditViewState extends State<EditView> {
                   "시작 시간",
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-                subtitle: Text(_formatTime(_startTime!)),
+                subtitle: Text(DateTimeUtil.formatTimeOfDay(_startTime!)),
                 trailing: Icon(Icons.access_time),
                 onTap: () => _pickTime(true),
               ),
@@ -235,7 +231,7 @@ class _EditViewState extends State<EditView> {
                   "종료 시간",
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-                subtitle: Text(_formatTime(_endTime!)),
+                subtitle: Text(DateTimeUtil.formatTimeOfDay(_endTime!)),
                 trailing: Icon(Icons.access_time),
                 onTap: () => _pickTime(false),
               ),
@@ -326,16 +322,15 @@ class _EditViewState extends State<EditView> {
     }
 
     final updated = TodoList(
-      seq: widget.todo.seq,                 // ★ 수정 대상 row 지정
-      id: widget.todo.id,                   // 유저 ID는 그대로
-      startdate: _formatDate(_startSelectedDay),
-      enddate: _formatDate(_endSelectedDay),
+      seq: widget.todo.seq,
+      id: widget.todo.id,
+      startdate: DateTimeUtil.formatDate(_startSelectedDay),
+      enddate: DateTimeUtil.formatDate(_endSelectedDay),
       title: titleController.text.trim(),
       task: taskController.text.trim(),
-      starttime: _formatTime(_startTime!),
-      endtime: _formatTime(_endTime!),
-      fav: widget.todo.fav,                 // 즐겨찾기 유지
-      end: widget.todo.end,                 // 완료 여부 유지 (필요하면 여기서도 제어 가능)
+      starttime: DateTimeUtil.formatTimeOfDay(_startTime!),
+      endtime: DateTimeUtil.formatTimeOfDay(_endTime!),
+      end: widget.todo.end,
     );
 
     final result = await handler.updateTodoList(updated);
@@ -358,8 +353,8 @@ class _EditViewState extends State<EditView> {
       onConfirm: () async {
         await handler.deleteTodolist(widget.todo.seq!);
         widget.onUpdated();
-        Get.back();  // dialog 닫기
-        Get.back(result: true);  // EditView 닫기
+        Get.back();
+        Get.back(result: true);
       },
     );
   }

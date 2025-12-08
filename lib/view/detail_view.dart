@@ -17,11 +17,11 @@ class DetailView extends StatefulWidget {
 class DetailViewState extends State<DetailView> {
 
   // Property
-  late DatabaseHandler handler;
-  UserList? user;
+  late DatabaseHandler handler;                     // handler
+  UserList? user;                                   // 유저 정보
 
-  late TextEditingController searchController;
-  String _keyword = '';
+  late TextEditingController searchController;      // 검색 TextField
+  String _keyword = '';                             // 검색 창 키워드
 
   @override
   void initState() {
@@ -37,6 +37,7 @@ class DetailViewState extends State<DetailView> {
     super.dispose();
   }
 
+  // 유저 정보 가져오기
   loadUserData() async {
     List<UserList> list = await handler.queryUserList(widget.userid);
     if (list.isNotEmpty) {
@@ -45,6 +46,7 @@ class DetailViewState extends State<DetailView> {
     setState(() {});
   }
 
+  // 검색
   _onSearch() {
     setState(() {
       _keyword = searchController.text.trim();
@@ -63,7 +65,6 @@ class DetailViewState extends State<DetailView> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // 검색창
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Row(
@@ -175,5 +176,5 @@ class DetailViewState extends State<DetailView> {
         ),
       ),
     );
-  }
-}
+  } // build
+} // class

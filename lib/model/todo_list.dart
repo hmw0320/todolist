@@ -8,7 +8,6 @@ class TodoList {
   String task;       // 일정 내용
   String starttime;  // 시작 시간
   String endtime;    // 종료 시간
-  bool fav;          // 즐겨찾기 여부
   bool end;          // 완료 여부
 
 
@@ -22,7 +21,6 @@ class TodoList {
       required this.task,
       required this.starttime,
       required this.endtime,
-      this.fav = false,
       this.end = false,
     }
   );
@@ -36,7 +34,6 @@ class TodoList {
     task = res['task'],
     starttime = res['starttime'],
     endtime = res['endtime'],
-    fav = res['fav'] == 1,
     end = res['end'] == 1;
 
 }

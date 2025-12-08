@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:todolist_app/model/user_list.dart';
+import 'package:todolist_app/util/datetime.dart';
 import 'package:todolist_app/view/edit_view.dart';
 import 'package:todolist_app/view/profile_view.dart';
 import 'package:todolist_app/vm/database_handler.dart';
@@ -16,12 +17,11 @@ class Overview extends StatefulWidget {
 }
 
 class OverviewState extends State<Overview> {
+  late DatabaseHandler handler;       // handler
+  UserList? user;                     // 유저 정보
 
-  late DatabaseHandler handler;
-  UserList? user;
-
-  int _todayTotal = 0;      // 오늘 끝나는 일정 총 개수
-  int _todayCompleted = 0;  // 오늘 끝나는 일정 중 완료 개수
+  int _todayTotal = 0;                // 오늘 끝나는 일정 총 개수
+  int _todayCompleted = 0;            // 오늘 끝나는 일정 중 완료 개수
 
   @override
   void initState() {
@@ -31,18 +31,21 @@ class OverviewState extends State<Overview> {
     reFresh();
   }
 
+  // 새로고침
   Future<void> reFresh() async {
     await handler.updateEnd(widget.userid);
     await loadTodayCounts(); 
     setState(() {});
   }
 
-    Future<void> loadTodayCounts() async {
+  // 오늘 종료 일정 개수
+  Future<void> loadTodayCounts() async {
     final counts = await handler.getTodayTaskCounts(widget.userid);
     _todayTotal = counts['total'] ?? 0;
     _todayCompleted = counts['completed'] ?? 0;
   }
 
+  // 유저 정보 가져오기
   loadUserData() async {
     List<UserList> list = await handler.queryUserList(widget.userid);
     if (list.isNotEmpty) {
@@ -50,7 +53,6 @@ class OverviewState extends State<Overview> {
     }
     setState(() {});
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -211,9 +213,9 @@ class OverviewState extends State<Overview> {
                                         Padding(
                                           padding: const EdgeInsets.all(5.0),
                                           child: Text(
-                                            formatDateTimeText(
-                                              snapshot.data![index].startdate,   // ← 수정
-                                              snapshot.data![index].enddate,     // ← 수정
+                                            DateTimeUtil.formatRangeText(
+                                              snapshot.data![index].startdate,
+                                              snapshot.data![index].enddate,
                                               snapshot.data![index].starttime,
                                               snapshot.data![index].endtime,
                                             ),
@@ -282,9 +284,9 @@ class OverviewState extends State<Overview> {
                                             ],
                                           ),
                                           Text(
-                                            formatDateTimeText(
-                                              snapshot.data![index].startdate,   // ← 수정
-                                              snapshot.data![index].enddate,     // ← 수정
+                                            DateTimeUtil.formatRangeText(
+                                              snapshot.data![index].startdate,
+                                              snapshot.data![index].enddate,
                                               snapshot.data![index].starttime,
                                               snapshot.data![index].endtime,
                                             ),
@@ -314,48 +316,4 @@ class OverviewState extends State<Overview> {
       ),
     );
   } // build
-
-  // Functions -------------------------------
-  String formatDateTimeText(String startdate, String enddate, String start, String end) {
-    final now = DateTime.now();
-    final todayStr =
-        '${now.year.toString().padLeft(4, '0')}-'
-        '${now.month.toString().padLeft(2, '0')}-'
-        '${now.day.toString().padLeft(2, '0')}';
-
-    final DateTime startDT = DateTime.parse('$startdate $start:00');
-    DateTime endDT = DateTime.parse('$enddate $end:00');
-
-    if (!endDT.isAfter(startDT)) {
-      endDT = endDT.add(const Duration(days: 1));
-    }
-
-    String formatTime(DateTime dt) {
-      final h = dt.hour.toString().padLeft(2, '0');
-      final m = dt.minute.toString().padLeft(2, '0');
-      return '$h:$m';
-    }
-
-    String formatDayTime(DateTime dt) {
-      return '${dt.month}월 ${dt.day}일 ${formatTime(dt)}';
-    }
-
-    final bool sameDay =
-        startDT.year == endDT.year &&
-        startDT.month == endDT.month &&
-        startDT.day == endDT.day;
-
-    if (sameDay) {
-      if (startdate == todayStr) {
-        return '${formatTime(startDT)} ~ ${formatTime(endDT)}';
-      } else {
-        return '${startDT.month}월 ${startDT.day}일 '
-               '${formatTime(startDT)} ~ ${formatTime(endDT)}';
-      }
-    } else {
-      final startStr = formatDayTime(startDT);
-      final endStr = formatDayTime(endDT);
-      return '$startStr ~ $endStr';
-    }
-  }
 } // class

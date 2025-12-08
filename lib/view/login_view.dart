@@ -14,12 +14,12 @@ class LoginView extends StatefulWidget {
 
 class _LoginViewState extends State<LoginView> {
 
-  late TextEditingController idController;
-  late TextEditingController pwController;
-  late DatabaseHandler handler;
-  late bool i;
+  late TextEditingController idController;        // 아이디 입력 창
+  late TextEditingController pwController;        // 비밀번호 입력 창
+  late DatabaseHandler handler;                   // handler
+  late bool i;                                    // 로그인 성공 여부
 
-  Message message = Message();
+  Message message = Message();                    // message
 
   @override
   void initState() {
@@ -103,7 +103,7 @@ class _LoginViewState extends State<LoginView> {
   } // build
 
   checkLogin() async{
-    // ID, PW가 비어있을 경우
+    // id, pw가 비어있을 경우
     if(idController.text.trim().isEmpty ||
        pwController.text.trim().isEmpty){
       i=true;
@@ -132,7 +132,7 @@ class _LoginViewState extends State<LoginView> {
           ],
         );
       }else{
-    // ID, PW가 틀렸을 경우
+    // id, pw가 틀렸을 경우
         i=false;
         message.snackBar('오류', '아이디 또는 비밀번호가 틀렸습니다.');
       }

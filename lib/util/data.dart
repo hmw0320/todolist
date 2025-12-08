@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
-/// 요일(라벨) + 값
+// 요일, 완료 개수
 class DayStat {
   final String label;
   final double value;
@@ -12,7 +12,7 @@ class DayStat {
   });
 }
 
-/// RadialBar 에 들어갈 데이터
+// RadialBar 에 들어갈 데이터
 class ProgressData {
   final String label;
   final double value;
@@ -20,11 +20,11 @@ class ProgressData {
   ProgressData(this.label, this.value);
 }
 
-/// 오늘 / 이번주 진행률 카드
+// 오늘, 이번 주 진행률
 class ProgressCard extends StatelessWidget {
   final String title;
   final String subtitle;
-  final double percent; // 0~100
+  final double percent;
 
   const ProgressCard({
     super.key,
@@ -48,14 +48,12 @@ class ProgressCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // 텍스트 영역 ---------------------------------------------------
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 제목
                     Text(
                       title,
                       style: const TextStyle(
@@ -63,7 +61,6 @@ class ProgressCard extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    // 부제
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
@@ -74,7 +71,6 @@ class ProgressCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // 퍼센트 텍스트
                     Padding(
                       padding: const EdgeInsets.only(top: 6),
                       child: Text(
@@ -90,7 +86,6 @@ class ProgressCard extends StatelessWidget {
                 ),
               ),
             ),
-            // 원형 진행률 ---------------------------------------------------
             SizedBox(
               width: 70,
               height: 70,

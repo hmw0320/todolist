@@ -2,9 +2,9 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:todolist_app/model/todo_list.dart';
 import 'package:todolist_app/model/user_list.dart';
+import 'package:todolist_app/util/datetime.dart';
 
 class DatabaseHandler {
-
   // Connection, Table Creation : UserList, TodoList
   Future<Database> initializeDB() async{
     String path = await getDatabasesPath();
@@ -34,7 +34,6 @@ class DatabaseHandler {
             task text,
             starttime text,
             endtime text,
-            fav integer default 0,
             end integer default 0
           )
           """
@@ -150,15 +149,11 @@ class DatabaseHandler {
     return result.map((e) => TodoList.fromMap(e)).toList();
   }
 
-  // 오늘 완료/총 일정 개수 조회
+  // 오늘 완료, 총 일정 개수 조회
   Future<Map<String, int>> getTodayTaskCounts(String userid) async {
     final db = await initializeDB();
 
-    final now = DateTime.now();
-    final String today =
-        "${now.year.toString().padLeft(4, '0')}-"
-        "${now.month.toString().padLeft(2, '0')}-"
-        "${now.day.toString().padLeft(2, '0')}";
+    final String today = DateTimeUtil.todayYMD();
 
     final List<Map<String, Object?>> result = await db.rawQuery(
       """
@@ -185,7 +180,6 @@ class DatabaseHandler {
       'completed': completed,
     };
   }
-
 
   // Update : UserList (이미지 변경 X)
   Future<int> updateUserList(UserList user) async{
@@ -255,16 +249,16 @@ class DatabaseHandler {
       final String endtime   = row['endtime'] as String;
 
       // 문자열 → DateTime
-      DateTime startDt = DateTime.parse('$startdate $starttime:00');
-      DateTime endDt   = DateTime.parse('$enddate $endtime:00');
+      DateTime startDt = DateTimeUtil.parseDateAndTime(startdate, starttime);
+      DateTime endDt = DateTimeUtil.parseDateAndTime(enddate, endtime);
 
-      // 혹시 잘못 입력해서 endDt가 startDt보다 빠르면 방어적으로 하루 더해줌
+      // endDt가 startDt보다 빠르면 하루 추가
       if (endDt.isBefore(startDt)) {
-        endDt = endDt.add(const Duration(days: 1));
+        endDt = endDt.add(Duration(days: 1));
       }
 
-      // 현재 시간이 종료 시각을 지났으면 end = 1로 업데이트
-      if (!now.isBefore(endDt)) { // now >= endDt
+      // 현재 시간이 종료 시각을 지났으면 end = 1
+      if (!now.isBefore(endDt)) {
         final int cnt = await db.rawUpdate(
           """
           update todolist
@@ -314,13 +308,13 @@ class DatabaseHandler {
     return result.map((e) => TodoList.fromMap(e)).toList();
   }
 
-    // 이번 주(월~일) 기준 완료/총 일정 개수 조회
+    // 이번 주 완료, 총 일정 개수 조회
   Future<Map<String, int>> getWeekTaskCounts(String userid) async {
     final db = await initializeDB();
     final now = DateTime.now();
 
-    // Dart에서 이번 주 월요일, 일요일 계산
-    final int weekday = now.weekday; // 월=1 ... 일=7
+    // 이번 주 월요일, 일요일 계산
+    final int weekday = now.weekday;
     final DateTime monday = now.subtract(Duration(days: weekday - 1));
     final DateTime sunday = monday.add(const Duration(days: 6));
 
@@ -358,12 +352,12 @@ class DatabaseHandler {
     };
   }
 
-    // 이번 주(월~일) 날짜별 total/completed 통계
+    // 이번 주 날짜별 total/completed 통계
   Future<List<Map<String, Object?>>> getWeekDailyStats(String userid) async {
     final db = await initializeDB();
     final now = DateTime.now();
 
-    final int weekday = now.weekday; // 월=1 ... 일=7
+    final int weekday = now.weekday;
     final DateTime monday = now.subtract(Duration(days: weekday - 1));
     final DateTime sunday = monday.add(const Duration(days: 6));
 
@@ -389,7 +383,6 @@ class DatabaseHandler {
       """,
       [userid, start, end],
     );
-
     return result;
   }
 
@@ -412,7 +405,6 @@ class DatabaseHandler {
     );
   }
 
-
   // Delete : TodoList
   Future<void> deleteTodolist(int seq) async{
     final Database db = await initializeDB();
@@ -424,6 +416,4 @@ class DatabaseHandler {
       [seq]
     );
   }
-
-
 }

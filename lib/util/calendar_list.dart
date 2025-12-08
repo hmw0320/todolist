@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 class CalendarList extends StatelessWidget {
-  final DateTime startDate;
-  final int dayCount;
-  final DateTime selectedDay;
-  final ValueChanged<DateTime> onDaySelected;
+  final DateTime startDate;                       // 시작 날짜
+  final int dayCount;                             // 총 날짜 개수
+  final DateTime selectedDay;                     // 선택된 날짜
+  final ValueChanged<DateTime> onDaySelected;     // 날짜 선택 시 OverView로
 
   const CalendarList({
     super.key,

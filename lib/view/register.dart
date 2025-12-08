@@ -15,14 +15,15 @@ class Register extends StatefulWidget {
 }
 
 class _RegisterState extends State<Register> {
-  late TextEditingController idController;
-  late TextEditingController pwController;
-  late TextEditingController nameController;
-  late DatabaseHandler handler;
-  XFile? imageFile;
+  late TextEditingController idController;      // 아이디 입력 창
+  late TextEditingController pwController;      // 비밀번호 입력 창
+  late TextEditingController nameController;    // 이름 입력 창
+  
+  late DatabaseHandler handler;                 // handler
+  XFile? imageFile;                             // 이미지 파일
 
-  final ImagePicker picker = ImagePicker();
-  Message message = Message();
+  final ImagePicker picker = ImagePicker();     // Image Picker
+  Message message = Message();                  // message
 
   @override
   void initState() {
@@ -120,7 +121,8 @@ class _RegisterState extends State<Register> {
       ),
     );
   } // build
-
+  
+  // Functions ------------------------------------
   Future getImageFromGallery(ImageSource imageSource) async {
     final XFile? pickedFile = await picker.pickImage(source: imageSource);
     if (pickedFile == null) {
@@ -129,16 +131,14 @@ class _RegisterState extends State<Register> {
       imageFile = XFile(pickedFile.path);
       setState(() {});
     }
-  } // getImageFromGallery
+  }
 
   checkRegister() async{
     int result = checkData(); 
-    if(result == 0){ // 모두 입력 되었을 경우에만 입력 하기 
-
-      // File Type을 Byte Type으로 변환하기
+    if(result == 0){
+      // File Type을 Byte Type으로 변환
       File imageFile1 = File(imageFile!.path);
       Uint8List getImage = await imageFile1.readAsBytes();
-
 
       var userlist = UserList(
         id: idController.text.trim(),
@@ -153,9 +153,9 @@ class _RegisterState extends State<Register> {
       : message.showDialog('완료', '가입이 완료 되었습니다.');
     }
 
-  } // insertAction
+  }
 
-  // 입력 체크 : Error 조건 구성
+  // 입력 체크
   int checkData(){
     final List<Map<String, dynamic>> checks = [
       {
@@ -190,7 +190,5 @@ class _RegisterState extends State<Register> {
     }
     
     return result;
-  } // checkData
-
-
+  }
 } // class

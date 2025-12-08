@@ -10,7 +10,7 @@ import 'package:todolist_app/vm/database_handler.dart';
 import 'package:todolist_app/view/login_view.dart';
 
 class ProfileView extends StatefulWidget {
-  final String userid;
+  final String userid;                              // 유저 정보
 
   const ProfileView({super.key, required this.userid});
 
@@ -19,15 +19,15 @@ class ProfileView extends StatefulWidget {
 }
 
 class _ProfileViewState extends State<ProfileView> {
-  late TextEditingController nameController;
-  late TextEditingController deleteIdController;
-  late DatabaseHandler handler;
+  late TextEditingController nameController;        // 이름 입력 창
+  late TextEditingController deleteIdController;    // 삭제 확인 창
+  late DatabaseHandler handler;                     // handler
 
-  XFile? imageFile;
-  UserList? user;
+  XFile? imageFile;                                 // 이미지 파일
+  UserList? user;                                   // 유저 정보
 
-  final ImagePicker picker = ImagePicker();
-  Message message = Message();
+  final ImagePicker picker = ImagePicker();         // Image Picker
+  Message message = Message();                      // message
 
   @override
   void initState() {
@@ -45,6 +45,7 @@ class _ProfileViewState extends State<ProfileView> {
     super.dispose();
   }
 
+  // 유저 정보 가져오기
   loadUserData() async {
     List<UserList> list = await handler.queryUserList(widget.userid);
     if (list.isNotEmpty) {
@@ -137,7 +138,7 @@ class _ProfileViewState extends State<ProfileView> {
               ),
             ),
     );
-  }
+  } // build
 
   Future getImageFromGallery(ImageSource imageSource) async {
     final XFile? pickedFile = await picker.pickImage(source: imageSource);
@@ -147,6 +148,7 @@ class _ProfileViewState extends State<ProfileView> {
     }
   }
 
+  // 프로필 수정
   profileEdit() async {
     int result = checkData();
     if (result == 0) {
@@ -192,6 +194,7 @@ class _ProfileViewState extends State<ProfileView> {
     return result;
   }
 
+  // 탈퇴 시 아이디 입력 창
   _showDeleteIdDialog() {
     deleteIdController.text = '';
 
@@ -225,7 +228,8 @@ class _ProfileViewState extends State<ProfileView> {
     );
   }
 
-  void _showFinalDeleteConfirm() {
+  // 탈퇴 최종 확인
+  _showFinalDeleteConfirm() {
     Get.defaultDialog(
       title: '정말 탈퇴하시겠습니까?',
       middleText: '계정의 모든 정보가 삭제되며 복구할 수 없습니다.',
@@ -239,4 +243,4 @@ class _ProfileViewState extends State<ProfileView> {
       },
     );
   }
-}
+} // class

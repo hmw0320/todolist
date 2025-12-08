@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:todolist_app/model/todo_list.dart';
 import 'package:todolist_app/util/message.dart';
+import 'package:todolist_app/util/datetime.dart';
 import 'package:todolist_app/vm/database_handler.dart';
 
 class AddView extends StatefulWidget {
@@ -17,18 +18,18 @@ class AddView extends StatefulWidget {
 }
 
 class _AddViewState extends State<AddView> {
-  late TextEditingController titleController;
-  late TextEditingController taskController;
-  late DatabaseHandler handler;
+  late TextEditingController titleController;       // 일정 제목
+  late TextEditingController taskController;        // 일정 내용
+  late DatabaseHandler handler;                     // handler
 
-  DateTime _startSelectedDay = DateTime.now();
-  DateTime _endSelectedDay   = DateTime.now();
+  DateTime _startSelectedDay = DateTime.now();      // 시작 날짜
+  DateTime _endSelectedDay   = DateTime.now();      // 종료 날짜
 
-  TimeOfDay? _startTime;
-  TimeOfDay? _endTime;
+  TimeOfDay? _startTime;                            // 시작 시간
+  TimeOfDay? _endTime;                              // 종료 시간
 
-  Duration _startDuration = Duration(hours: 9);
-  Duration _endDuration   = Duration(hours: 10);
+  Duration _startDuration = Duration(hours: 9);     // CupertinoTimerPicker 초기 시작시간
+  Duration _endDuration   = Duration(hours: 10);    // CupertinoTimerPicker 초기 종료시간
 
   Message message = Message();
 
@@ -41,7 +42,8 @@ class _AddViewState extends State<AddView> {
       _resetForm();
     }
 
-  void _resetForm() {
+  // 입력 창 초기화
+  _resetForm() {
     titleController.clear();
     taskController.clear();
 
@@ -59,14 +61,7 @@ class _AddViewState extends State<AddView> {
     _endDuration   = Duration(hours: endDT.hour,   minutes: endDT.minute);
   }
 
-  String _formatDate(DateTime date) =>
-      "${date.year.toString().padLeft(4,'0')}-"
-      "${date.month.toString().padLeft(2,'0')}-"
-      "${date.day.toString().padLeft(2,'0')}";
-
-  String _formatTime(TimeOfDay time) =>
-      "${time.hour.toString().padLeft(2,'0')}:${time.minute.toString().padLeft(2,'0')}";
-
+  // 날짜 선택
   Future<void> _pickDate(bool isStart) async {
     DateTime temp = isStart ? _startSelectedDay : _endSelectedDay;
 
@@ -100,6 +95,7 @@ class _AddViewState extends State<AddView> {
       },
     );
 
+  // 날짜가 선택된 경우
     if (result != null) {
       setState(() {
         if (isStart) {
@@ -114,6 +110,7 @@ class _AddViewState extends State<AddView> {
     }
   }
 
+  // TimerPicker
   Future<void> _pickTime(bool isStart) async {
     Duration temp = isStart ? _startDuration : _endDuration;
 
@@ -176,42 +173,38 @@ class _AddViewState extends State<AddView> {
               padding: const EdgeInsets.only(bottom: 12),
               child: ListTile(
                 title: Text("시작 날짜", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                subtitle: Text(_formatDate(_startSelectedDay)),
+                subtitle: Text(DateTimeUtil.formatDate(_startSelectedDay)),
                 trailing: Icon(Icons.calendar_month),
                 onTap: () => _pickDate(true),
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: ListTile(
                 title: Text("종료 날짜", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                subtitle: Text(_formatDate(_endSelectedDay)),
+                subtitle: Text(DateTimeUtil.formatDate(_endSelectedDay)),
                 trailing: Icon(Icons.calendar_month),
                 onTap: () => _pickDate(false),
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: ListTile(
                 title: Text("시작 시간", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                subtitle: Text(_formatTime(_startTime!)),
+                subtitle: Text(DateTimeUtil.formatTimeOfDay(_startTime!)),
                 trailing: Icon(Icons.access_time),
                 onTap: () => _pickTime(true),
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.only(bottom: 18),
               child: ListTile(
                 title: Text("종료 시간", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                subtitle: Text(_formatTime(_endTime!)),
+                subtitle: Text(DateTimeUtil.formatTimeOfDay(_endTime!)),
                 trailing: Icon(Icons.access_time),
                 onTap: () => _pickTime(false),
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: TextField(
@@ -219,7 +212,6 @@ class _AddViewState extends State<AddView> {
                 decoration: InputDecoration(labelText: "제목을 입력하세요", border: OutlineInputBorder()),
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.only(bottom: 18),
               child: TextField(
@@ -228,7 +220,6 @@ class _AddViewState extends State<AddView> {
                 decoration: InputDecoration(labelText: "내용을 입력하세요", border: OutlineInputBorder()),
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.only(bottom: 30),
               child: ElevatedButton(
@@ -269,12 +260,12 @@ class _AddViewState extends State<AddView> {
 
     final todo = TodoList(
       id: widget.userid,
-      startdate: _formatDate(_startSelectedDay),
-      enddate: _formatDate(_endSelectedDay),
+      startdate: DateTimeUtil.formatDate(_startSelectedDay),
+      enddate: DateTimeUtil.formatDate(_endSelectedDay),
       title: titleController.text.trim(),
       task: taskController.text.trim(),
-      starttime: _formatTime(_startTime!),
-      endtime: _formatTime(_endTime!),
+      starttime: DateTimeUtil.formatTimeOfDay(_startTime!),
+      endtime: DateTimeUtil.formatTimeOfDay(_endTime!),
     );
 
     int result = await handler.insertTodoList(todo);

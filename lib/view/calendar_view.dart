@@ -16,16 +16,16 @@ class CalendarView extends StatefulWidget {
 
 class CalendarViewState extends State<CalendarView> {
 
-  late DatabaseHandler handler;
-  UserList? user;
+  late DatabaseHandler handler;           // handler
+  UserList? user;                         // 유저 정보
 
-  DateTime _selectedDay = DateTime.now();
-  DateTime _currentMonth = DateTime(
+  DateTime _selectedDay = DateTime.now(); // 선택된 날짜
+  DateTime _currentMonth = DateTime(      // 현재 월
     DateTime.now().year,
     DateTime.now().month,
     1,
   );
-  bool _isExpanded = false;
+  bool _isExpanded = false;               // 달력 페이지 확장 여부
 
   @override
   void initState() {
@@ -34,6 +34,7 @@ class CalendarViewState extends State<CalendarView> {
     loadUserData();
   }
 
+  // 유저 정보 가져오기
   loadUserData() async {
     List<UserList> list = await handler.queryUserList(widget.userid);
     if (list.isNotEmpty) {
@@ -49,6 +50,7 @@ class CalendarViewState extends State<CalendarView> {
     return "$year-$month-$day";
   }
 
+  // 현재 월 일 수 계산
   int _daysInMonth(DateTime month) {
     final firstDayNextMonth = (month.month == 12)
         ? DateTime(month.year + 1, 1, 1)
@@ -56,6 +58,7 @@ class CalendarViewState extends State<CalendarView> {
     return firstDayNextMonth.subtract(Duration(days: 1)).day;
   }
 
+  // 월 선택
   Future<void> _pickMonth() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
@@ -72,7 +75,8 @@ class CalendarViewState extends State<CalendarView> {
       });
     }
   }
-
+  
+  // 오늘로 이동
   _goToday() {
     final now = DateTime.now();
     setState(() {
@@ -83,15 +87,17 @@ class CalendarViewState extends State<CalendarView> {
 
   @override
   Widget build(BuildContext context) {
-    final String selectedDateString = _formatDate(_selectedDay);
-    final int daysInMonth = _daysInMonth(_currentMonth);
-    final DateTime monthStart =
+    final String selectedDateString = _formatDate(_selectedDay);    // 현재 선택한 날짜
+    final int daysInMonth = _daysInMonth(_currentMonth);            // 이 달의 전체 날짜 수
+    final DateTime monthStart =                                     // 이번 달 시작 날짜
         DateTime(_currentMonth.year, _currentMonth.month, 1);
 
     return Scaffold(
       appBar: AppBar(
-        title: SizedBox(),
+        title: Text('날짜별 일정'),
+        centerTitle: true,
         backgroundColor: Colors.lightBlue,
+        foregroundColor: Colors.white,
         actions: [
           TextButton(
             onPressed: _goToday,
@@ -192,6 +198,16 @@ class CalendarViewState extends State<CalendarView> {
                             itemCount: snapshot.data!.length,
                             itemBuilder: (context, index) {
                               final todo = snapshot.data![index];
+                              final bool isSameStart =
+                                  todo.startdate == selectedDateString;
+                              final bool isSameEnd =
+                                  todo.enddate == selectedDateString;
+
+                              final String timeText = (isSameStart && isSameEnd)
+                                  ? '${todo.starttime} ~ ${todo.endtime}'
+                                  : '${todo.startdate} ${todo.starttime} ~ '
+                                    '${todo.enddate} ${todo.endtime}';
+
                               return GestureDetector(
                                 onTap: () async {
                                 final result = await Get.to(
@@ -228,15 +244,15 @@ class CalendarViewState extends State<CalendarView> {
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 Text(
-                                                  snapshot.data![index].title,
+                                                  todo.title,
                                                   style: TextStyle(
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 16,
                                                   ),
                                                 ),
-                                                Text(snapshot.data![index].task),
+                                                Text(todo.task),
                                                 Text(
-                                                  '${snapshot.data![index].starttime} ~ ${snapshot.data![index].endtime}',
+                                                  timeText,
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     color: Colors.grey[600],
@@ -268,5 +284,5 @@ class CalendarViewState extends State<CalendarView> {
         ),
       ),
     );
-  }
-}
+  } // bulid
+} // class

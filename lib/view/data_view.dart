@@ -12,13 +12,13 @@ class DataView extends StatefulWidget {
 }
 
 class DataViewState extends State<DataView> {
-  late DatabaseHandler handler;
+  late DatabaseHandler handler;           // handler
 
-  double _todayPercent = 0;
-  double _weekPercent = 0;
+  double _todayPercent = 0;               // 오늘 완료 비율
+  double _weekPercent = 0;                // 이번 주 완료 비율
 
-  List<DayStat> _weekBarStats = [];
-  List<DayStat> _weekLineStats = [];
+  List<DayStat> _weekBarStats = [];       // 이번 주 전체 일정 수
+  List<DayStat> _weekLineStats = [];      // 이번 주 완료 일정 수
 
   @override
   void initState() {
@@ -27,8 +27,8 @@ class DataViewState extends State<DataView> {
     _loadData();
   }
 
+  // Update
   Future<void> _loadData() async {
-    // 완료 상태 먼저 업데이트
     await handler.updateEnd(widget.userid);
 
     // 오늘 통계
@@ -97,7 +97,6 @@ class DataViewState extends State<DataView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 오늘 진행률 카드 ---------------------------------------------
             Padding(
               padding: const EdgeInsets.only(bottom: 20),
               child: ProgressCard(
@@ -106,8 +105,6 @@ class DataViewState extends State<DataView> {
                 percent: _todayPercent,
               ),
             ),
-
-            // 이번 주 진행률 카드 -----------------------------------------
             Padding(
               padding: const EdgeInsets.only(bottom: 24),
               child: ProgressCard(
@@ -116,8 +113,6 @@ class DataViewState extends State<DataView> {
                 percent: _weekPercent,
               ),
             ),
-
-            // 섹션 타이틀 : 요일별 일정 수 --------------------------------
             Padding(
               padding: EdgeInsets.only(bottom: 12),
               child: Text(
@@ -128,8 +123,6 @@ class DataViewState extends State<DataView> {
                 ),
               ),
             ),
-
-            // 바 차트 -----------------------------------------------------
             Padding(
               padding: const EdgeInsets.only(bottom: 24),
               child: SizedBox(
@@ -151,8 +144,6 @@ class DataViewState extends State<DataView> {
                 ),
               ),
             ),
-
-            // 섹션 타이틀 : 요일별 완료 수 --------------------------------
             Padding(
               padding: EdgeInsets.only(bottom: 12),
               child: Text(
@@ -163,8 +154,6 @@ class DataViewState extends State<DataView> {
                 ),
               ),
             ),
-
-            // 라인 차트 (완료 수, 라벨 포함) ------------------------------
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: SizedBox(
@@ -179,7 +168,7 @@ class DataViewState extends State<DataView> {
                       yValueMapper: (DayStat d, _) => d.value,
                       markerSettings: MarkerSettings(isVisible: true),
                       dataLabelSettings: DataLabelSettings(
-                        isVisible: true, // 점 위에 숫자 표시
+                        isVisible: true,
                       ),
                     ),
                   ],
