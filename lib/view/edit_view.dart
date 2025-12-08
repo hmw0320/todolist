@@ -22,20 +22,20 @@ class EditView extends StatefulWidget {
 }
 
 class _EditViewState extends State<EditView> {
-  late TextEditingController titleController;         // 제목 입력 창
-  late TextEditingController taskController;          // 내용 입력 창
-  late DatabaseHandler handler;                       // handler
+  late TextEditingController titleController;     // 제목 입력 창
+  late TextEditingController taskController;      // 내용 입력 창
+  late DatabaseHandler handler;                   // handler
 
-  DateTime _startSelectedDay = DateTime.now();        // 선택된 시작 날짜
-  DateTime _endSelectedDay   = DateTime.now();        // 선택된 종료 날짜
+  DateTime _startSelectedDay = DateTime.now();    // 선택된 시작 날짜
+  DateTime _endSelectedDay   = DateTime.now();    // 선택된 종료 날짜
 
-  TimeOfDay? _startTime;                              // 선택된 시작 시간
-  TimeOfDay? _endTime;                                // 선택된 종료 시간
+  TimeOfDay? _startTime;                          // 선택된 시작 시간
+  TimeOfDay? _endTime;                            // 선택된 종료 시간
 
-  Duration _startDuration = Duration(hours: 9);       // CupertinoTimerPicker 초기 시작 시간
-  Duration _endDuration   = Duration(hours: 10);      // CupertinoTimerPicker 초기 종료 시간
+  Duration _startDuration = Duration(hours: 9);   // CupertinoTimerPicker 초기 시작 시간
+  Duration _endDuration   = Duration(hours: 10);  // CupertinoTimerPicker 초기 종료 시간
 
-  Message message = Message();                        // SnackBar, Dialog
+  Message message = Message();                    // SnackBar, Dialog
 
   @override
   void initState() {

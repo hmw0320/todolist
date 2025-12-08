@@ -17,11 +17,11 @@ class DetailView extends StatefulWidget {
 class DetailViewState extends State<DetailView> {
 
   // Property
-  late DatabaseHandler handler;                     // handler
-  UserList? user;                                   // 유저 정보
+  late DatabaseHandler handler;                  // handler
+  UserList? user;                                // 유저 정보
 
-  late TextEditingController searchController;      // 검색 TextField
-  String _keyword = '';                             // 검색 창 키워드
+  late TextEditingController searchController;   // 검색 TextField
+  String _keyword = '';                          // 검색 창 키워드
 
   @override
   void initState() {

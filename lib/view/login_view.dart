@@ -14,12 +14,12 @@ class LoginView extends StatefulWidget {
 
 class _LoginViewState extends State<LoginView> {
 
-  late TextEditingController idController;        // 아이디 입력 창
-  late TextEditingController pwController;        // 비밀번호 입력 창
-  late DatabaseHandler handler;                   // handler
-  late bool i;                                    // 로그인 성공 여부
+  late TextEditingController idController;   // 아이디 입력 창
+  late TextEditingController pwController;   // 비밀번호 입력 창
+  late DatabaseHandler handler;              // handler
+  late bool i;                               // 로그인 성공 여부
 
-  Message message = Message();                    // message
+  Message message = Message();               // message
 
   @override
   void initState() {

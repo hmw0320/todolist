@@ -12,13 +12,13 @@ class DataView extends StatefulWidget {
 }
 
 class DataViewState extends State<DataView> {
-  late DatabaseHandler handler;           // handler
+  late DatabaseHandler handler;        // handler
 
-  double _todayPercent = 0;               // 오늘 완료 비율
-  double _weekPercent = 0;                // 이번 주 완료 비율
+  double _todayPercent = 0;            // 오늘 완료 비율
+  double _weekPercent = 0;             // 이번 주 완료 비율
 
-  List<DayStat> _weekBarStats = [];       // 이번 주 전체 일정 수
-  List<DayStat> _weekLineStats = [];      // 이번 주 완료 일정 수
+  List<DayStat> _weekBarStats = [];    // 이번 주 전체 일정 수
+  List<DayStat> _weekLineStats = [];   // 이번 주 완료 일정 수
 
   @override
   void initState() {

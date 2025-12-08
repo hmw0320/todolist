@@ -2,10 +2,10 @@ import 'dart:typed_data';
 
 class UserList {
 
-  String id;              // 아이디
-  String pw;              // 비밀번호
-  String name;            // 이름
-  Uint8List image;        // 프로필 이미지
+  String id;         // 아이디
+  String pw;         // 비밀번호
+  String name;       // 이름
+  Uint8List image;   // 프로필 이미지
 
   UserList(
     {

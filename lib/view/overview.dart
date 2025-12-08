@@ -17,11 +17,11 @@ class Overview extends StatefulWidget {
 }
 
 class OverviewState extends State<Overview> {
-  late DatabaseHandler handler;       // handler
-  UserList? user;                     // 유저 정보
+  late DatabaseHandler handler;      // handler
+  UserList? user;                    // 유저 정보
 
-  int _todayTotal = 0;                // 오늘 끝나는 일정 총 개수
-  int _todayCompleted = 0;            // 오늘 끝나는 일정 중 완료 개수
+  int _todayTotal = 0;               // 오늘 끝나는 일정 총 개수
+  int _todayCompleted = 0;           // 오늘 끝나는 일정 중 완료 개수
 
   @override
   void initState() {
